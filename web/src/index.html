@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#121212">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>ProbeMonkey</title>
+  <!-- INLINE_CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Tab bar -->
+  <nav id="tab-bar">
+    <button class="tab active" data-tab="scope">Scope</button>
+    <button class="tab" data-tab="settings">Settings</button>
+  </nav>
+
+  <!-- ================================================================== -->
+  <!-- SCOPE VIEW                                                          -->
+  <!-- ================================================================== -->
+  <div id="scope-view" class="view active">
+    <!-- Status + Freeze row -->
+    <div class="top-row">
+      <div id="status-chip" class="chip">
+        <span id="status-dot" class="dot"></span>
+        <span id="status-label">disconnected</span>
+      </div>
+      <button id="freeze-btn" class="chip chip-btn">LIVE</button>
+    </div>
+
+    <!-- Test signal controls -->
+    <div id="test-signal-row" class="chip-row hidden">
+      <button id="test-toggle-btn" class="chip chip-btn">Test Signal</button>
+      <button id="test-wave-btn" class="chip chip-btn hidden">square</button>
+      <button id="test-freq-btn" class="chip chip-btn hidden">1kHz</button>
+    </div>
+
+    <!-- Voltage range selector -->
+    <div id="range-row" class="chip-row">
+      <button class="range-btn active" data-range="3.3V">3.3V</button>
+      <button class="range-btn" data-range="5V">5V</button>
+      <button class="range-btn" data-range="18V">18V</button>
+      <button class="range-btn" data-range="38V">38V</button>
+      <button class="range-btn" data-range="79V">79V</button>
+    </div>
+
+    <!-- Waveform canvas -->
+    <div id="canvas-wrapper">
+      <canvas id="scope-canvas"></canvas>
+      <!-- Measurement overlay (top-right, frozen only) -->
+      <div id="measure-overlay" class="hidden">
+        <div id="measure-min"></div>
+        <div id="measure-max"></div>
+        <div id="measure-period"></div>
+        <div id="measure-freq"></div>
+      </div>
+    </div>
+
+    <!-- Sliders -->
+    <div class="slider-row">
+      <span class="slider-label">V/div</span>
+      <input id="vdiv-slider" type="range" min="0" max="3" step="1" value="2" class="slider slider-green">
+      <span id="vdiv-value" class="slider-value">0.5V</span>
+    </div>
+    <div class="slider-row">
+      <span class="slider-label">ms/div</span>
+      <input id="msdiv-slider" type="range" min="0" max="6" step="1" value="3" class="slider slider-cyan">
+      <span id="msdiv-value" class="slider-value">10ms</span>
+    </div>
+    <div id="offset-row" class="slider-row hidden">
+      <span class="slider-label">Offset</span>
+      <input id="offset-slider" type="range" min="0" max="0" step="1" value="0" class="slider slider-orange">
+      <span id="offset-value" class="slider-value">0.0ms</span>
+    </div>
+  </div>
+
+  <!-- ================================================================== -->
+  <!-- SETTINGS VIEW                                                       -->
+  <!-- ================================================================== -->
+  <div id="settings-view" class="view">
+    <div class="settings-scroll">
+      <h2>ESP32 Connection</h2>
+
+      <!-- Connection status -->
+      <div class="status-row">
+        <span id="settings-status-dot" class="dot"></span>
+        <span id="settings-status-text">disconnected</span>
+      </div>
+
+      <div id="conn-info" class="info-block hidden">
+        <span class="info-label">Mode</span>
+        <span id="conn-mode" class="info-value">—</span>
+        <span class="info-label" style="margin-top:8px">URL</span>
+        <span id="conn-url" class="info-value">—</span>
+      </div>
+
+      <hr class="divider">
+
+      <h3>Resistor Calibration</h3>
+      <p class="hint">Enter measured resistor values (k&Omega;) for accurate voltage readings. Leave blank to use nominal values.</p>
+
+      <!-- R2 (shared) -->
+      <div class="cal-card">
+        <div class="cal-card-title">R2 — Bottom (all ranges)</div>
+        <div class="cal-nominal">Nominal: 10 k&Omega;</div>
+        <div class="input-row">
+          <label>Measured R2 (k&Omega;)</label>
+          <input id="r2-input" type="number" step="any" placeholder="10">
+        </div>
+      </div>
+
+      <!-- R1 per range -->
+      <div class="cal-card" data-range="3.3V">
+        <div class="cal-card-header">
+          <span class="cal-card-title">3.3V Range</span>
+          <span class="cal-computed" id="cal-3.3V-info">Ratio: 2.00  Max: 3.3V</span>
+        </div>
+        <div class="cal-nominal">R1 nominal: 10 k&Omega;</div>
+        <div class="input-row">
+          <label>Measured R1 (k&Omega;)</label>
+          <input class="r1-input" data-range="3.3V" type="number" step="any" placeholder="10">
+        </div>
+      </div>
+
+      <div class="cal-card" data-range="5V">
+        <div class="cal-card-header">
+          <span class="cal-card-title">5V Range</span>
+          <span class="cal-computed" id="cal-5V-info">Ratio: 3.20  Max: 5.3V</span>
+        </div>
+        <div class="cal-nominal">R1 nominal: 22 k&Omega;</div>
+        <div class="input-row">
+          <label>Measured R1 (k&Omega;)</label>
+          <input class="r1-input" data-range="5V" type="number" step="any" placeholder="22">
+        </div>
+      </div>
+
+      <div class="cal-card" data-range="18V">
+        <div class="cal-card-header">
+          <span class="cal-card-title">18V Range</span>
+          <span class="cal-computed" id="cal-18V-info">Ratio: 11.00  Max: 18.2V</span>
+        </div>
+        <div class="cal-nominal">R1 nominal: 100 k&Omega;</div>
+        <div class="input-row">
+          <label>Measured R1 (k&Omega;)</label>
+          <input class="r1-input" data-range="18V" type="number" step="any" placeholder="100">
+        </div>
+      </div>
+
+      <div class="cal-card" data-range="38V">
+        <div class="cal-card-header">
+          <span class="cal-card-title">38V Range</span>
+          <span class="cal-computed" id="cal-38V-info">Ratio: 23.00  Max: 38.0V</span>
+        </div>
+        <div class="cal-nominal">R1 nominal: 220 k&Omega;</div>
+        <div class="input-row">
+          <label>Measured R1 (k&Omega;)</label>
+          <input class="r1-input" data-range="38V" type="number" step="any" placeholder="220">
+        </div>
+      </div>
+
+      <div class="cal-card" data-range="79V">
+        <div class="cal-card-header">
+          <span class="cal-card-title">79V Range</span>
+          <span class="cal-computed" id="cal-79V-info">Ratio: 48.00  Max: 79.2V</span>
+        </div>
+        <div class="cal-nominal">R1 nominal: 470 k&Omega;</div>
+        <div class="input-row">
+          <label>Measured R1 (k&Omega;)</label>
+          <input class="r1-input" data-range="79V" type="number" step="any" placeholder="470">
+        </div>
+      </div>
+
+      <button id="reset-cal-btn" class="btn btn-outline-orange">Reset to Nominal Values</button>
+
+      <hr class="divider">
+
+      <h3>ADC Calibration</h3>
+      <p class="hint">Connect GPIO25 to GPIO36 with a jumper wire, then tap Calibrate. This sweeps the DAC through 256 voltage levels and builds a correction lookup table for ADC non-linearity.</p>
+
+      <div class="cal-card">
+        <div class="cal-card-header">
+          <span class="cal-card-title">Status</span>
+          <span id="adc-status-text" class="adc-status">Not calibrated</span>
+        </div>
+      </div>
+
+      <button id="run-adc-btn" class="btn btn-green" disabled>Run ADC Calibration</button>
+      <button id="clear-adc-btn" class="btn btn-outline-orange hidden">Clear ADC Calibration</button>
+    </div>
+  </div>
+
+  <!-- INLINE_JS -->
+  <script src="constants.js"></script>
+  <script src="adc.js"></script>
+  <script src="websocket.js"></script>
+  <script src="scope.js"></script>
+  <script src="settings.js"></script>
+</body>
+</html>
