@@ -1,4 +1,4 @@
-# ProbeMonkey
+# ProbeMonkey [WIP]
 
 An ESP32-based single-channel digital oscilloscope for HVAC and low-voltage AC waveform measurements, with real-time WiFi streaming to a browser-based UI.
 
